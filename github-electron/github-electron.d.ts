@@ -1,6 +1,6 @@
-// Type definitions for Electron 0.25.2 (shared between main and rederer processes)
+// Type definitions for Electron 0.33.0 (shared between main and rederer processes)
 // Project: http://electron.atom.io/
-// Definitions by: jedmao <https://github.com/jedmao/>
+// Definitions by: jedmao <https://github.com/jedmao/>, Alexander Rusakov <https://github.com/arusakov/>
 // Definitions: https://github.com/borisyankov/DefinitelyTyped
 
 /// <reference path="../node/node.d.ts" />
@@ -51,17 +51,67 @@ declare module GitHubElectron {
 		 * Marks the image as template image.
 		 */
 		setTemplateImage(option: boolean): void;
+		/**
+		 * @returns boolean Whether the image is a template image.
+		 */
+		isTemplateImage(): boolean;
 	}
 
 	module Clipboard {
 		/**
-		 * @returns The contents of the clipboard as a NativeImage.
+		 * @returns The content in the clipboard as plain text.
+		 */
+		function readText(type?: string): string;
+		/**
+		 * Writes the text into the clipboard as plain text.
+		 */
+		function writeText(text: string, type?: string): void;
+		/**
+		 * @returns The content in the clipboard as markup.
+		 */
+		function readHtml(type?: string): string;
+		/**
+		 * Writes markup to the clipboard.
+		 */
+		function writeHtml(markup: string, type?: string): void;
+		/**
+		 * @returns The contents in the clipboard as a NativeImage.
 		 */
 		function readImage(type?: string): NativeImage;
 		/**
 		 * Writes the image into the clipboard.
 		 */
 		function writeImage(image: NativeImage, type?: string): void;
+		/**
+		 * Clears the clipboard content.
+		 */
+		function clear(type?: string): void;
+		/**
+		 * @returns Returns an array of supported formats for the clipboard type.
+		 */
+		function availableFormats(type?: string): string[];
+		/**
+		 * EXPERIMENTAL
+		 * @returns Wrhether the clipboard supports the format of specified data.
+		 */
+		function has(data: string, type?: string): boolean;
+		/**
+		 * EXPERIMENTAL
+		 * Reads data from the clipboard.
+		 */
+		function read(data: string, type?: string): void;
+		/**
+		 * Data type for write method.
+		 */
+		interface ClipboardWriteData {
+		  	text?: string;
+				html?: string;
+				image?: NativeImage;
+		}
+		/**
+		 * Writes data to the clipboard.
+		 */
+		function write(data: ClipboardWriteData, type?: string):void;
 	}
 
 	class Screen implements NodeJS.EventEmitter {
@@ -147,12 +197,6 @@ declare module GitHubElectron {
 		 */
 		webContents: WebContents;
 		/**
-		 * Get the WebContents of devtools of this window.
-		 * Note: Users should never store this object because it may become null when
-		 * the devtools has been closed.
-		 */
-		devToolsWebContents: WebContents;
-		/**
 		 * Get the unique ID of this window.
 		 */
 		id: number;
@@ -226,6 +270,11 @@ declare module GitHubElectron {
 		 * @returns Whether the window is in fullscreen mode.
 		 */
 		isFullScreen(): boolean;
+		/**
+		 * Note: This API is available only on OS X.
+		 * https://github.com/atom/electron/blob/af971a46bd125ac778faa27e2a6a6eb52d1f77a1/docs/api/browser-window.md#winsetaspectratioaspectratio-extrasize-os-x
+		 */
+		setAspectRatio(aspectRatio: number, extraSize?: {width: number, height: number}): void;
 		/**
 		 * Resizes and moves the window to width, height, x, y.
 		 */
@@ -343,32 +392,6 @@ declare module GitHubElectron {
 		 * @returns Whether the window's document has been edited.
 		 */
 		isDocumentEdited(): boolean;
-		/**
-		 * Opens the developer tools.
-		 */
-		openDevTools(options?: {
-			/**
-			 * Opens devtools in a new window.
-			 */
-			detach?: boolean;
-		}): void;
-		/**
-		 * Closes the developer tools.
-		 */
-		closeDevTools(): void;
-		/**
-		 * Returns whether the developer tools are opened.
-		 */
-		isDevToolsOpened(): boolean;
-		/**
-		 * Toggle the developer tools.
-		 */
-		toggleDevTools(): void;
-		reloadIgnoringCache(): void;
-		/**
-		 * Starts inspecting element at position (x, y).
-		 */
-		inspectElement(x: number, y: number): void;
 		focusOnWebView(): void;
 		blurWebView(): void;
 		/**
@@ -383,10 +406,7 @@ declare module GitHubElectron {
 		/**
 		 * Same with webContents.print([options])
 		 */
-		print(options?: {
-			silent?: boolean;
-			printBackground?: boolean;
-		}): void;
+		print(options?: WebContentsPrintOptions): void;
 		/**
 		 * Same with webContents.printToPDF([options])
 		 */
@@ -432,6 +452,12 @@ declare module GitHubElectron {
 		 */
 		setOverlayIcon(overlay: NativeImage, description: string): void;
 		/**
+		 * [setThumbarButtons description]
+		 * Note: This API is available only on Windows 7+.
+		 * @returns indicates whether the thumbnail has been added successfully
+		 */
+		setThumbarButtons(buttons: ThumbarButton[]): boolean;
+		/**
 		 * Shows pop-up dictionary that searches the selected word on the page.
 		 * Note: This API is available only on OS X.
 		 */
@@ -468,10 +494,35 @@ declare module GitHubElectron {
 		isVisibleOnAllWorkspaces(): boolean;
 	}
 
+	interface ThumbarButton {
+		icon: NativeImage | string; // The icon showing in thumbnail toolbar.
+		tooltip?: string; // The text of the button's tooltip.
+		flags?: string[]; // Control specific states and behaviors of the button. By default, it uses enabled. It can include following Strings:
+											// enabled - The button is active and available to the user.
+											// disabled - The button is disabled. It is present, but has a visual state indicating it will not respond to user action.
+											// dismissonclick - When the button is clicked, the taskbar button's flyout closes immediately.
+											// nobackground - Do not draw a button border, use only the image.
+											// hidden - The button is not shown to the user.
+											// noninteractive - The button is enabled but not interactive; no pressed button state is drawn. This value is intended for instances where the button is used in a notification.
+		click: Function;
+	}
+
+	interface WebContentsPrintOptions {
+		silent?: boolean; // Don't ask user for print settings, defaults to false.
+		printBackground?: boolean; // Also prints the background color and image of the web page, defaults to false.
+	}
+
+	interface WebContentPrintToPDFOptions {
+		marginsType?: number; // Specify the type of margins to use: 0 - default, 1 - none, 2 - minimum.
+		pageSize?: string; // Specify page size of the generated PDF: A4 - default, A3, Legal, Letter, Tabloid.
+		printBackground?: boolean; // Whether to print CSS backgrounds. Default to false.
+		printSelectionOnly?: boolean; // Whether to print selection only. Default to false.
+		landscape?: boolean; // true for landscape, false for portrait. Default to false.
+	}
+
 	// Includes all options BrowserWindow can take as of this writing
-	// http://electron.atom.io/docs/v0.29.0/api/browser-window/
+	// http://electron.atom.io/docs/v0.33.0/api/browser-window/
 	interface BrowserWindowOptions extends Rectangle {
-		show?: boolean;
 		'use-content-size'?: boolean;
 		center?: boolean;
 		'min-width'?: number;
@@ -482,31 +533,38 @@ declare module GitHubElectron {
 		'always-on-top'?: boolean;
 		fullscreen?: boolean;
 		'skip-taskbar'?: boolean;
-		'zoom-factor'?: number;
 		kiosk?: boolean;
 		title?: string;
 		icon?: NativeImage|string;
+		show?: boolean;
 		frame?: boolean;
-		'node-integration'?: boolean;
 		'accept-first-mouse'?: boolean;
 		'disable-auto-hide-cursor'?: boolean;
 		'auto-hide-menu-bar'?: boolean;
 		'enable-larger-than-screen'?: boolean;
 		'dark-theme'?: boolean;
-		preload?: string;
 		transparent?: boolean;
 		type?: string;
 		'standard-window'?: boolean;
-		'web-preferences'?: any; // Object
+		'title-bar-style'?: string;
+		'web-preferences'?: WebPreferences;
+	}
+
+	interface WebPreferences {
+		'node-integration'?: boolean;
+		preload?: string;
+		partition?: string;
+		'zoom-factor'?: number;
 		javascript?: boolean;
 		'web-security'?: boolean;
+		'allow-displaying-insecure-content'?: boolean;
+		'allow-running-insecure-content'?: boolean;
+		'text-areas-are-resizable'?: boolean;
 		images?: boolean;
 		java?: boolean;
-		'text-areas-are-resizable'?: boolean;
 		webgl?: boolean;
 		webaudio?: boolean;
 		plugins?: boolean;
-		'extra-plugin-dirs'?: string[];
 		'experimental-features'?: boolean;
 		'experimental-canvas-features'?: boolean;
 		'subpixel-font-scaling'?: boolean;
@@ -536,6 +594,10 @@ declare module GitHubElectron {
 		setMaxListeners(n: number): void;
 		listeners(event: string): Function[];
 		emit(event: string, ...args: any[]): boolean;
+		/**
+		 * Session object.
+		 */
+		session: WebContentsSession;
 		/**
 		 * Loads the url in the window.
 		 * @param url Must contain the protocol prefix (e.g., the http:// or file://).
@@ -590,6 +652,10 @@ declare module GitHubElectron {
 		 */
 		canGoToOffset(offset: number): boolean;
 		/**
+		 * Clears the navigation history.
+		 */
+		clearHistory(): void;
+		/**
 		 * Makes the web page go back.
 		 */
 		goBack(): void;
@@ -614,6 +680,10 @@ declare module GitHubElectron {
 		 */
 		setUserAgent(userAgent: string): void;
 		/**
+		 * @returns Representing the user agent for this web page.
+		 */
+		getUserAgent(): string;
+		/**
 		 * Injects CSS into this page.
 		 */
 		insertCSS(css: string): void;
@@ -622,6 +692,14 @@ declare module GitHubElectron {
 		 * @param code Code to evaluate.
 		 */
 		executeJavaScript(code: string): void;
+		/**
+		 * Mute the audio on the current web page
+		 */
+		setAudioMuted(muted: boolean): void;
+		/**
+		 * @returns Whether this page has been muted.
+		 */
+		isAudioMuted(): boolean;
 		/**
 		 * Executes Edit -> Undo command in page.
 		 */
@@ -642,6 +720,10 @@ declare module GitHubElectron {
 		 * Executes Edit -> Paste command in page.
 		 */
 		paste(): void;
+		/**
+		 * Executes Edit -> Paste and match style command in page.
+		 */
+		pasteAndMatchStyle(): void;
 		/**
 		 * Executes Edit -> Delete command in page.
 		 */
@@ -694,42 +776,45 @@ declare module GitHubElectron {
 		/**
 		 * Prints windows' web page as PDF with Chromium's preview printing custom settings.
 		 */
-		printToPDF(options: {
-			/**
-			 * Specify the type of margins to use. Default is 0.
-			 *   0 - default
-			 *   1 - none
-			 *   2 - minimum
-			 */
-			marginsType?: number;
-			/**
-			 * String - Specify page size of the generated PDF. Default is A4.
-			 *   A4
-			 *   A3
-			 *   Legal
-			 *   Letter
-			 *   Tabloid
-			 */
-			pageSize?: string;
-			/**
-			 * Whether to print CSS backgrounds. Default is false.
-			 */
-			printBackground?: boolean;
-			/**
-			 * Whether to print selection only. Default is false.
-			 */
-			printSelectionOnly?: boolean;
-			/**
-			 * true for landscape, false for portrait.  Default is false.
-			 */
-			landscape?: boolean;
-		},
+		printToPDF(options: WebContentPrintToPDFOptions, callback: (error: Error, data: Buffer /* PDF file content */) => void): void;
 		/**
-		 * Callback function on completed converting to PDF.
-		 *   error Error
-		 *   data Buffer - PDF file content
+		 * Adds the specified path to DevTools workspace.
 		 */
-		callback: (error: Error, data: Buffer) => void): void;
+		addWorkSpace(path: string): void;
+		/**
+		 * Removes the specified path from DevTools workspace.
+		 */
+		removeWorkSpace(path: string): void;
+		/**
+		 * Opens the developer tools.
+		 */
+		openDevTools(options?: {
+			detach: boolean; // Opens DevTools in a new window
+		}): void;
+		/**
+		 * Closes the developer tools.
+		 */
+		closeDevTools(): void;
+		/**
+		 * @returns Whether the developer tools are opened.
+		 */
+		isDevToolsOpened(): boolean;
+		/**
+		 * Toggles the developer tools.
+		 */
+		toggleDevTools(): void;
+		/**
+		 * @returns Whether the developer tools is focused.
+		 */
+		isDevToolsFocused(): boolean;
+		/**
+		 * Starts inspecting element at position (x, y).
+		 */
+		inspectElement(x: number, y: number): void;
+		/**
+		 * Opens the developer tools for the service worker context.
+		 */
+		inspectServiceWorker(): void;
 		/**
 		 * Send args.. to the web page via channel in asynchronous message, the web page
 		 * can handle it by listening to the channel event of ipc module.
@@ -740,6 +825,137 @@ declare module GitHubElectron {
 		 *      to a renderer process, because it would be very easy to cause dead locks.
 		 */
 		send(channel: string, ...args: any[]): void;
+		/**
+		 * Enable device emulation with the given parameters.
+		 */
+		enableDeviceEmulation(parameters: {
+			screenPosition?: string; // Specify the screen type to emulate (default: desktop): desktop, mobile.
+			screenSize?: {
+				width: number;
+				height: number;
+			}; // Set the emulated screen size (screenPosition == mobile).
+			viewPosition?: {
+				x: number;
+				y: number;
+			}; // Position the view on the screen (screenPosition == mobile) (default: {x: 0, y: 0})
+			deviceScaleFactor?: number; // Set the device scale factor (if zero defaults to original device scale factor) (default: 0)
+			viewSize?: {
+				width: number;
+				height: number;
+			}; // Set the emulated view size (empty means no override).
+			fitToView?: boolean; // Whether emulated view should be scaled down if necessary to fit into available space (default: false).
+			offset?: {
+				x: number;
+				y: number;
+			}; // Offset of the emulated view inside available space (not in fit to view mode) (default: {x: 0, y: 0})
+			scale?: number; // Scale of emulated view inside available space (not in fit to view mode) (default: 1)
+		}): void;
+		/**
+		 * Disable device emulation enabled by webContents.enableDeviceEmulation.
+		 */
+		disableDeviceEmulation(): void;
+		/**
+		 * Sends an input event to the page.
+		 */
+		sendInputEvent(event: InputEvent|InputEventKeyboard|InputEventMouse|InputEventWheel): void;
+		/**
+		 * Begin subscribing for presentation events and captured frames, the callback will be called with callback(frameBuffer) when there is a presentation event.
+		 */
+		beginFrameSubscription(callback: Function): void;
+		/**
+		 * End subscribing for frame presentation events.
+		 */
+		endFrameSubscription(): void;
+		/**
+		 * Get the WebContents of DevTools for this WebContents.
+		 */
+		devToolsWebContents: WebContents;
+	}
+
+	interface InputEvent {
+		type: string; // The type of the event, can be mouseDown, mouseUp, mouseEnter, mouseLeave, contextMenu, mouseWheel, keyDown, keyUp, char.
+		modifiers?: string[]; // An array of modifiers of the event, can include shift, control, alt, meta, isKeypad, isAutoRepeat, leftButtonDown, middleButtonDown, rightButtonDown, capsLock, numLock, left, right.
+	}
+
+	interface InputEventKeyboard extends InputEvent {
+		keyCode: string;
+	}
+
+	interface InputEventMouse extends InputEvent {
+		x: number;
+		y: number;
+		button?: string; // The button pressed, can be left, middle, right
+		globalX?: number;
+		globalY?: number;
+		movementX?: number;
+		movementY?: number;
+		clickCount?: number;
+	}
+
+	interface InputEventWheel extends InputEvent {
+		deltaX?: number;
+		deltaY?: number;
+		wheelTicksX?: number;
+		wheelTicksY?: number;
+		accelerationRatioX?: number;
+		accelerationRatioY?: number;
+		hasPreciseScrollingDeltas?: boolean;
+		canScroll?: boolean;
+	}
+
+	interface WebContentsSession extends NodeJS.EventEmitter {
+		cookies: WebContentsSessionCookies; // The cookies gives you ability to query and modify cookies.
+		clearCache(callback: Function): void; // Clears the session’s HTTP cache.
+		clearStorageData(options: {
+			origin: string;
+			storages: string[]; // The types of storages to clear, can contain: appcache, cookies, filesystem, indexdb, local storage, shadercache, websql, serviceworkers
+			quotas: string[]; // The types of quotas to clear, can contain: temporary, persistent, syncable.
+		}, callback: Function): void;
+		setProxy(config: string, callback: Function): void;
+		setDownloadPath(path: string): void;
+		enableNetworkEmulation(options: {
+			offline: boolean; // Whether to emulate network outage.
+			latency: number; // RTT in ms
+			downloadThroughput: number; // Download rate in Bps
+			uploadThroughput: number; // Upload rate in Bps
+		}): void;
+		disableNetworkEmulation(): void;
+	}
+
+	interface WebContentsSessionCookies {
+		get(details: {
+			url: string;
+			name?: string;
+			domain?: string;
+			path?: string;
+			secure?: boolean;
+			session?: boolean;
+		}, callback: (error: Error, cookeis: Cookie[]) => void): void;
+		set(details: {
+			url: string;
+			name: string;
+			domain: string;
+			path: string;
+			secure: boolean;
+			session: boolean;
+			expirationDate: number;
+		}, callback: (error: Error) => void): void;
+		remove(details: {
+			url: string;
+			name: string;
+		}, callback: (error: Error) => void): void;
+	}
+
+	interface Cookie {
+		name: string; // The name of the cookie.
+		value: string; // The value of the cookie.
+		domain: string; // The domain of the cookie.
+		host_only: string; // Whether the cookie is a host-only cookie.
+		path: string; // The path of the cookie.
+		secure: boolean; // Whether the cookie is marked as Secure (typically HTTPS).
+		http_only: boolean; // Whether the cookie is marked as HttpOnly.
+		session: boolean; // Whether the cookie is a session cookie or a persistent cookie with an expiration date.
+		expirationDate?: number; // The expiration date of the cookie as the number of seconds since the UNIX epoch. Not provided for session cookies.
 	}
 
 	/**
@@ -787,7 +1003,10 @@ declare module GitHubElectron {
 		 * Inserts the menuItem to the pos position of the menu.
 		 */
 		insert(position: number, menuItem: MenuItem): void;
-		items: MenuItem[];
+		/**
+		 * Get an array containing the menu's items.
+		 */
+		items(): MenuItem[];
 	}
 
 	class MenuItem {
@@ -801,9 +1020,19 @@ declare module GitHubElectron {
 		 */
 		click?: Function;
 		/**
-		 * Call the selector of first responder when clicked (OS X only).
+		 * Define the action of the menu item, when specified the click property will be ignored.
+		 * Can have following values: undo, redo, cut, copy, paste, selectall, minimize - Minimize current window, close - Close current window
+		 * On OS X role can also have following additional values:
+		 * 		about - Map to the orderFrontStandardAboutPanel action
+		 * 		hide - Map to the hide action
+		 *   	hideothers - Map to the hideOtherApplications action
+		 * 		unhide - Map to the unhideAllApplications action
+		 *		front - Map to the arrangeInFront action
+		 *		window - The submenu is a "Window" menu
+		 *		help - The submenu is a "Help" menu
+		 *		services - The submenu is a "Services" menu
 		 */
-		selector?: string;
+		role?: string;
 		/**
 		 * Can be normal, separator, submenu, checkbox or radio.
 		 */
@@ -922,11 +1151,6 @@ declare module GitHubElectron {
 		 */
 		quit(): void;
 		/**
-		 * Quit the application directly, it will not try to close all windows so
-		 * cleanup code will not run.
-		 */
-		terminate(): void;
-		/**
 		 * Returns the current application directory.
 		 */
 		getAppPath(): string;
@@ -963,10 +1187,14 @@ declare module GitHubElectron {
 		 */
 		getName(): string;
 		/**
+		 * @returns The current application locale.
+		 */
+		getLocale(): string;
+		/**
 		 * Resolves the proxy information for url, the callback would be called with
 		 * callback(proxy) when the request is done.
 		 */
-		resolveProxy(url: string, callback: Function): void;
+		resolveProxy(url: string, callback: (proxy: BrowserWindowProxy) => void): void;
 		/**
 		 * Adds path to recent documents list.
 		 *
@@ -1284,7 +1512,7 @@ declare module GitHubElectron {
 		 */
 		read(format: string, type?: string): any;
 	}
-	
+
 	interface CrashReporterStartOptions {
 		/**
 		* Default: Electron
@@ -1315,7 +1543,7 @@ declare module GitHubElectron {
 		*/
 		extra?: {}
 	}
-	
+
 	interface CrashReporterPayload extends Object {
 		/**
 		* E.g., "electron-crash-service".
@@ -1355,17 +1583,17 @@ declare module GitHubElectron {
 		*/
 		upload_file_minidump: File;
 	}
-	
+
 	interface CrashReporter {
 		start(options?: CrashReporterStartOptions): void;
-	
+
 		/**
 		 * @returns The date and ID of the last crash report. When there was no crash report
 		 * sent or the crash reporter is not started, null will be returned.
 		 */
 		getLastCrashReport(): CrashReporterPayload;
 	}
-	
+
 	interface Shell{
 		/**
 		 * Show the given file in a file manager. If possible, select the file.
